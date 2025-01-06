@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discrimination Task</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        #participant-input, #task, #thank-you {
+            display: none;
+        }
+
+        input {
+            font-size: 18px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        #start-button, #play-sound, #next-button {
+            padding: 15px 30px;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+
+        #response-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .response-button {
+            width: 150px;
+            height: 150px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid #007BFF;
+            border-radius: 10px;
+            background-color: #E0E7FF;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .response-button:hover {
+            background-color: #007BFF;
+            color: white;
+            border-color: #0056b3;
+        }
+
+        .response-button.selected {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        #thank-you {
+            font-size: 22px;
+            margin-top: 30px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <!-- Participant ID Input Window -->
+    <div id="participant-input">
+        <h1>Welcome to the Discrimination Task</h1>
+        <p>Please enter your Participant ID to begin:</p>
+        <input type="text" id="participant-id" placeholder="Enter Participant ID">
+        <br>
+        <button id="start-button">Start</button>
+    </div>
+
+    <!-- Discrimination Task Window -->
+    <div id="task">
+        <h1>Discrimination Task</h1>
+        <p>Listen carefully and click on the word you thought you heard.</p>
+        <button id="play-sound">Play Sound</button>
+        <div id="response-buttons">
+            <button class="response-button" id="rock">Rock</button>
+            <button class="response-button" id="lock">Lock</button>
+        </div>
+        <button id="next-button" style="display: none;">Next</button>
+    </div>
+
+    <!-- Thank You Window -->
+    <div id="thank-you">
+        <h1>Thank You!</h1>
+        <p>Thank you for your participation! Your responses have been recorded.</p>
+    </div>
+
+    <script>
+        const sounds = ["lock.wav", "rock.wav"];
+        let currentSoundIndex = 0; // Current sound index
+        let responses = []; // Array to store responses
+        let startTime; // Reaction time start
+        let participantID = ""; // Participant ID
+        let selectedResponse = ""; // Tracks the current selected response
+
+        // Show the Participant Input Window
+        document.getElementById("participant-input").style.display = "block";
+
+        // Start Task
+        document.getElementById("start-button").addEventListener("click", function () {
+            participantID = document.getElementById("participant-id").value.trim();
+            if (participantID === "") {
+                alert("Please enter a valid Participant ID.");
+                return;
+            }
+
+            // Hide Participant Input Window and show Task Window
+            document.getElementById("participant-input").style.display = "none";
+            document.getElementById("task").style.display = "block";
+        });
+
+        // Play Sound
+        document.getElementById("play-sound").addEventListener("click", function () {
+            if (currentSoundIndex < sounds.length) {
+                // Play the current sound
+                const audio = new Audio(sounds[currentSoundIndex]);
+                audio.play();
+
+                // Record the start time
+                startTime = Date.now();
+
+                // Reset response and hide Next button
+                selectedResponse = "";
+                document.getElementById("next-button").style.display = "none";
+
+                // Clear previously selected button
+                document.querySelectorAll(".response-button").forEach(button => {
+                    button.classList.remove("selected");
+                });
+            } else {
+                // End the task and show Thank You Window
+                document.getElementById("task").style.display = "none";
+                document.getElementById("thank-you").style.display = "block";
+                saveResponses();
+            }
+        });
+
+        // Handle Responses
+        document.querySelectorAll(".response-button").forEach(button => {
+            button.addEventListener("click", function () {
+                // Highlight the selected button
+                document.querySelectorAll(".response-button").forEach(btn => {
+                    btn.classList.remove("selected");
+                });
+                button.classList.add("selected");
+
+                // Record the selected response
+                selectedResponse = button.id;
+
+                // Show the Next button
+                document.getElementById("next-button").style.display = "block";
+            });
+        });
+
+        // Handle Next Button
+        document.getElementById("next-button").addEventListener("click", function () {
+            if (selectedResponse === "") {
+                alert("Please select a response before proceeding.");
+                return;
+            }
+
+            // Calculate reaction time
+            const reactionTime = Date.now() - startTime;
+
+            // Record the response
+            responses.push({
+                sound: sounds[currentSoundIndex],
+                response: selectedResponse,
+                reactionTime: reactionTime,
+            });
+
+            // Move to the next sound
+            currentSoundIndex++;
+            document.getElementById("play-sound").click(); // Automatically play the next sound
+        });
+
+        function saveResponses() {
+            // Convert responses to CSV
+            let csvContent = "data:text/csv;charset=utf-8,ParticipantID,Sound,Response,ReactionTime(ms)\n";
+            responses.forEach(row => {
+                csvContent += `${participantID},${row.sound},${row.response},${row.reactionTime}\n`;
+            });
+
+            // Create downloadable CSV file
+            const encodedUri = encodeURI(csvContent);
+            const downloadAnchorNode = document.createElement("a");
+            downloadAnchorNode.setAttribute("href", encodedUri);
+            downloadAnchorNode.setAttribute("download", "responses.csv");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+    </script>
+</body>
+</html>
