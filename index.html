@@ -103,25 +103,23 @@
     </div>
 
     <script>
-        const sounds = ["lock.wav", "rock.wav"];
-        let currentSoundIndex = 0; // Current sound index
-        let responses = []; // Array to store responses
-        let startTime; // Reaction time start
-        let participantID = ""; // Participant ID
-        let selectedResponse = ""; // Tracks the current selected response
+        const sounds = ["lock.wav", "rock.wav"]; // Ensure these files are in the same directory
+        let currentSoundIndex = 0;
+        let responses = [];
+        let participantID = "";
+        let startTime;
+        let selectedResponse = "";
 
-        // Show the Participant Input Window
+        // Show Participant Input Window
         document.getElementById("participant-input").style.display = "block";
 
         // Start Task
         document.getElementById("start-button").addEventListener("click", function () {
             participantID = document.getElementById("participant-id").value.trim();
-            if (participantID === "") {
+            if (!participantID) {
                 alert("Please enter a valid Participant ID.");
                 return;
             }
-
-            // Hide Participant Input Window and show Task Window
             document.getElementById("participant-input").style.display = "none";
             document.getElementById("task").style.display = "block";
         });
@@ -129,73 +127,49 @@
         // Play Sound
         document.getElementById("play-sound").addEventListener("click", function () {
             if (currentSoundIndex < sounds.length) {
-                // Play the current sound
                 const audio = new Audio(sounds[currentSoundIndex]);
                 audio.play();
-
-                // Record the start time
                 startTime = Date.now();
-
-                // Reset response and hide Next button
                 selectedResponse = "";
                 document.getElementById("next-button").style.display = "none";
-
-                // Clear previously selected button
-                document.querySelectorAll(".response-button").forEach(button => {
-                    button.classList.remove("selected");
-                });
+                document.querySelectorAll(".response-button").forEach(btn => btn.classList.remove("selected"));
             } else {
-                // End the task and show Thank You Window
                 document.getElementById("task").style.display = "none";
                 document.getElementById("thank-you").style.display = "block";
                 saveResponses();
             }
         });
 
-        // Handle Responses
+        // Handle Response Selection
         document.querySelectorAll(".response-button").forEach(button => {
             button.addEventListener("click", function () {
-                // Highlight the selected button
-                document.querySelectorAll(".response-button").forEach(btn => {
-                    btn.classList.remove("selected");
-                });
+                document.querySelectorAll(".response-button").forEach(btn => btn.classList.remove("selected"));
                 button.classList.add("selected");
-
-                // Record the selected response
                 selectedResponse = button.id;
-
-                // Show the Next button
                 document.getElementById("next-button").style.display = "block";
             });
         });
 
         // Handle Next Button
         document.getElementById("next-button").addEventListener("click", function () {
-            if (selectedResponse === "") {
+            if (!selectedResponse) {
                 alert("Please select a response before proceeding.");
                 return;
             }
-
-            // Calculate reaction time
             const reactionTime = Date.now() - startTime;
-
-            // Record the response
             responses.push({
                 sound: sounds[currentSoundIndex],
                 response: selectedResponse,
                 reactionTime: reactionTime,
             });
-
-            // Move to the next sound
             currentSoundIndex++;
-            document.getElementById("play-sound").click(); // Automatically play the next sound
+            document.getElementById("play-sound").click();
         });
 
-        // Save Responses to Google Sheets
+        // Save Responses
         function saveResponses() {
-            const url = "https://script.google.com/macros/s/AKfycbyognF-kovFrOyWrAa7gMcYOHXjo5lfHCosUaRXjHyjMcTEqLlCsh0jAJ4sCV7hooeS/exec";
+            const url = "https://script.google.com/macros/s/YOUR_WEB_APP_ID/exec"; // Replace with your Web App URL
 
-            // Send each response to the Google Sheets backend
             responses.forEach(row => {
                 const data = {
                     ParticipantID: participantID,
@@ -209,11 +183,16 @@
                     body: JSON.stringify(data),
                     headers: { "Content-Type": "application/json" }
                 })
-                .then(response => console.log("Response saved:", response))
+                .then(response => {
+                    if (response.ok) {
+                        console.log("Response saved successfully");
+                    } else {
+                        console.error("Failed to save response:", response.statusText);
+                    }
+                })
                 .catch(error => console.error("Error saving response:", error));
             });
 
-            // Show a confirmation message in the console
             console.log("All responses sent to Google Sheets.");
         }
     </script>
